@@ -1,0 +1,18 @@
+[
+  {
+    "id": 1,
+    "title": "assgiment",
+    "subject": "java",
+    "dueDate": "2025-05-07",
+    "priority": "Medium",
+    "completed": true
+  },
+  {
+    "id": 2,
+    "title": "recod",
+    "subject": "dbms",
+    "dueDate": "2024-02-05",
+    "priority": "Low",
+    "completed": false
+  }
+]

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Student Task Manager</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="container">
+      <h1>📚 Student Task Manager</h1>
+
+      <!-- Stats -->
+      <div class="stats">
+        <div class="stat-card">
+          <span>Total</span>
+          <strong id="totalCount">0</strong>
+        </div>
+        <div class="stat-card">
+          <span>Pending</span>
+          <strong id="pendingCount">0</strong>
+        </div>
+        <div class="stat-card">
+          <span>Completed</span>
+          <strong id="completedCount">0</strong>
+        </div>
+      </div>
+
+      <!-- Form -->
+      <div class="task-input">
+        <input
+          type="text"
+          id="taskTitle"
+          placeholder="Task title (e.g., DBMS record, ADS assignment)"
+        />
+        <input
+          type="text"
+          id="taskSubject"
+          placeholder="Subject (e.g., DBMS, Java)"
+        />
+        <input type="date" id="taskDueDate" />
+        <select id="taskPriority">
+          <option value="Low">Low</option>
+          <option value="Medium" selected>Medium</option>
+          <option value="High">High</option>
+        </select>
+        <button id="addTaskButton">Add Task</button>
+      </div>
+
+      <!-- Filters -->
+      <div class="filters">
+        <button data-filter="all" class="filter-button active">All</button>
+        <button data-filter="pending" class="filter-button">Pending</button>
+        <button data-filter="completed" class="filter-button">
+          Completed
+        </button>
+      </div>
+
+      <!-- Table -->
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Subject</th>
+              <th>Due Date</th>
+              <th>Priority</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="taskTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <script src="app.js" defer></script>
+  </body>
+</html>
