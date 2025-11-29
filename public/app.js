@@ -121,4 +121,3 @@ filterBtns.forEach(btn => {
   });
 });
 load();
-    tasks.splice(index, 1);
