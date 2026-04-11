@@ -73,6 +73,7 @@ authPrimaryBtn.addEventListener("click", async () => {
     const password = authPasswordInput.value.trim();
     if (!username || !password) return showToast("Please fill all fields", "warning");
 
+    toggleLoading(authPrimaryBtn, true);
     const endpoint = isRegisterMode ? "/api/auth/register" : "/api/auth/login";
     try {
         const data = await apiRequest(endpoint, "POST", { username, password });
@@ -83,6 +84,7 @@ authPrimaryBtn.addEventListener("click", async () => {
             initApp();
         }
     } catch (err) { /* Toast handled in apiRequest */ }
+    finally { toggleLoading(authPrimaryBtn, false); }
 });
 
 logoutBtn.addEventListener("click", () => {
@@ -104,22 +106,27 @@ async function handleAddTask() {
     const title = taskTitleInput.value.trim();
     if (!title) return showToast("Task title is required", "warning");
 
+    toggleLoading(addTaskBtn, true);
     const tags = taskTagsInput.value.split(",").map(t => t.trim()).filter(t => t !== "");
 
-    await apiRequest("/api/tasks", "POST", {
-        title,
-        subject: taskSubjectInput.value.trim(),
-        dueDate: taskDueDateInput.value,
-        priority: taskPrioritySelect.value,
-        tags
-    });
+    try {
+        await apiRequest("/api/tasks", "POST", {
+            title,
+            subject: taskSubjectInput.value.trim(),
+            dueDate: taskDueDateInput.value,
+            priority: taskPrioritySelect.value,
+            tags
+        });
 
-    taskTitleInput.value = "";
-    taskSubjectInput.value = "";
-    taskDueDateInput.value = "";
-    taskTagsInput.value = "";
-    showToast("Task added successfully", "success");
-    fetchTasks();
+        taskTitleInput.value = "";
+        taskSubjectInput.value = "";
+        taskDueDateInput.value = "";
+        taskTagsInput.value = "";
+        showToast("Task added successfully", "success");
+        fetchTasks();
+    } finally {
+        toggleLoading(addTaskBtn, false);
+    }
 }
 
 async function toggleTaskStatus(id, completed) {
@@ -146,29 +153,39 @@ function showToast(message, type = "success") {
 }
 
 function exportToCSV() {
-    if (allTasks.length === 0) return showToast("No tasks to export", "warning");
+    const totalToExport = allTasks.length;
+    if (totalToExport === 0) return showToast("No tasks to export", "warning");
 
     const headers = ["Title", "Subject", "Due Date", "Priority", "Status", "Tags"];
+    
+    // Helper to escape CSV fields (handles commas and quotes)
+    const escapeCSV = (str) => {
+        if (str === null || str === undefined) return '""';
+        const escaped = String(str).replace(/"/g, '""');
+        return `"${escaped}"`;
+    };
+
     const rows = allTasks.map(t => [
-        t.title,
-        t.subject,
-        t.dueDate,
-        t.priority,
-        t.completed ? "Done" : "Pending",
-        t.tags ? t.tags.join("; ") : ""
+        escapeCSV(t.title),
+        escapeCSV(t.subject),
+        escapeCSV(t.dueDate),
+        escapeCSV(t.priority),
+        escapeCSV(t.completed ? "Done" : "Pending"),
+        escapeCSV(t.tags ? t.tags.join("; ") : "")
     ]);
 
-    const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
+    const csvContent = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute("download", `tasks_export_${Date.now()}.csv`);
+    link.setAttribute("download", `student_tasks_${Date.now()}.csv`);
     link.style.visibility = "hidden";
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    showToast("Exporting CSV...", "info");
+    
+    showToast(`Successfully exported ${totalToExport} tasks!`, "success");
 }
 
 // --- Init & UI ---
@@ -181,15 +198,36 @@ function initApp() {
         authOverlay.classList.add("hidden");
         appMain.classList.remove("hidden");
         userNameDisplay.textContent = currentUser.username;
+        
+        // Update Initials
+        const parts = currentUser.username.split(/[ .@]/);
+        const initials = parts.length > 1 
+            ? (parts[0][0] + parts[1][0]).toUpperCase()
+            : parts[0].substring(0, 2).toUpperCase();
+        document.getElementById("userInitials").textContent = initials;
+
         fetchTasks();
     }
 }
 
+function toggleLoading(btn, isLoading) {
+    if (isLoading) btn.classList.add("btn-loading");
+    else btn.classList.remove("btn-loading");
+}
+
 function render() {
     // KPI Updates
-    document.getElementById("totalCount").textContent = allTasks.length;
-    document.getElementById("pendingCount").textContent = allTasks.filter(t => !t.completed).length;
-    document.getElementById("completedCount").textContent = allTasks.filter(t => t.completed).length;
+    const total = allTasks.length;
+    const completed = allTasks.filter(t => t.completed).length;
+    
+    document.getElementById("totalCount").textContent = total;
+    document.getElementById("pendingCount").textContent = total - completed;
+    document.getElementById("completedCount").textContent = completed;
+    
+    // Update Progress Bar
+    const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
+    document.getElementById("completionBar").style.width = percent + "%";
+    document.getElementById("progressText").textContent = percent + "%";
     
     const now = new Date();
     const nextWeek = new Date(); nextWeek.setDate(now.getDate() + 7);

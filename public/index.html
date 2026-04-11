@@ -38,7 +38,10 @@
                     <h1>Student Task <span class="accent-text">Pro</span></h1>
                     <p>Welcome back, <span id="userNameDisplay" class="accent-text">Student</span>!</p>
                 </div>
-                <button id="logoutBtn" class="btn-outline">Logout</button>
+                <div class="header-actions">
+                    <div class="profile-circle" id="userInitials">?</div>
+                    <button id="logoutBtn" class="btn-outline">Logout</button>
+                </div>
             </div>
             <div class="kpi-grid">
                 <div class="kpi-card" id="kpi-total">
@@ -61,6 +64,17 @@
         </header>
 
         <main class="container">
+            <!-- Progress Section -->
+            <div class="progress-container">
+                <div class="progress-info">
+                    <span>Task Completion</span>
+                    <span id="progressText">0%</span>
+                </div>
+                <div class="progress-track">
+                    <div class="progress-bar" id="completionBar"></div>
+                </div>
+            </div>
+
             <!-- Control Panel -->
             <section class="control-panel">
                 <div class="input-grid">
@@ -89,7 +103,7 @@
                         <button data-filter="all" class="filter-button active">All</button>
                         <button data-filter="pending" class="filter-button">Pending</button>
                         <button data-filter="completed" class="filter-button">Completed</button>
-                        <button id="exportCsvBtn" class="btn-outline" title="Export to CSV">📥 Export</button>
+                        <button id="exportCsvBtn" class="btn-azure" title="Export to CSV">📥 Export CSV</button>
                         <button id="clearCompletedBtn" class="btn-outline-danger">Clear Completed</button>
                     </div>
                 </div>
