@@ -1,168 +1,272 @@
-
-// localStorage key
-const STORAGE_KEY = "student_tasks";
-
-// read tasks from localStorage
-function loadFromLocalStorage() {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-  } catch {
-    return [];
-  }
-}
-
-// save tasks to localStorage
-function saveToLocalStorage(tasks) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
-}
-
-// -------------------------------
-// DOM elements
-// -------------------------------
+// --- Globals & State ---
+let allTasks = [];
 let currentFilter = "all";
+let currentUser = JSON.parse(localStorage.getItem("taskProUser")) || null;
 
-const titleInput = document.getElementById("taskTitle");
-const subjectInput = document.getElementById("taskSubject");
-const dueDateInput = document.getElementById("taskDueDate");
-const prioritySelect = document.getElementById("taskPriority");
-const addBtn = document.getElementById("addTaskButton");
+// --- DOM Elements ---
+const appMain = document.getElementById("appMain");
+const authOverlay = document.getElementById("authOverlay");
+const authUsernameInput = document.getElementById("authUsername");
+const authPasswordInput = document.getElementById("authPassword");
+const authPrimaryBtn = document.getElementById("authPrimaryBtn");
+const authToggleBtn = document.getElementById("authToggleBtn");
+const authTitle = document.getElementById("authTitle");
+const authSubtitle = document.getElementById("authSubtitle");
+const authToggleText = document.getElementById("authToggleText");
 
-const tableBody = document.getElementById("taskTableBody");
-const filterBtns = document.querySelectorAll(".filter-button");
+const taskTitleInput = document.getElementById("taskTitle");
+const taskSubjectInput = document.getElementById("taskSubject");
+const taskDueDateInput = document.getElementById("taskDueDate");
+const taskPrioritySelect = document.getElementById("taskPriority");
+const taskTagsInput = document.getElementById("taskTags");
+const addTaskBtn = document.getElementById("addTaskButton");
 
-const totalCount = document.getElementById("totalCount");
-const pendingCount = document.getElementById("pendingCount");
-const completedCount = document.getElementById("completedCount");
+const searchInput = document.getElementById("searchInput");
+const sortSelect = document.getElementById("sortSelect");
+const exportCsvBtn = document.getElementById("exportCsvBtn");
+const logoutBtn = document.getElementById("logoutBtn");
+const userNameDisplay = document.getElementById("userNameDisplay");
+const toastContainer = document.getElementById("toastContainer");
 
-// -------------------------------
-// CRUD Operations
-// -------------------------------
+// --- API Wrapper ---
 
-function getTasks() {
-  return loadFromLocalStorage();
+async function apiRequest(endpoint, method = "GET", body = null) {
+    if (!currentUser && !endpoint.includes("/auth/")) return;
+    
+    const headers = { "Content-Type": "application/json" };
+    if (currentUser) headers["x-user-id"] = currentUser.userId;
+
+    try {
+        const res = await fetch(endpoint, {
+            method,
+            headers,
+            body: body ? JSON.stringify(body) : null
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "API Error");
+        return data;
+    } catch (err) {
+        showToast(err.message, "danger");
+        throw err;
+    }
 }
 
-function createTask(task) {
-  const tasks = getTasks();
-  const nextId = tasks.length ? Math.max(...tasks.map(t => t.id)) + 1 : 1;
+// --- Auth Logic ---
 
-  const newTask = {
-    id: nextId,
-    title: task.title.trim(),
-    subject: task.subject.trim() || "",
-    dueDate: task.dueDate || "",
-    priority: task.priority || "Medium",
-    completed: false
-  };
+let isRegisterMode = false;
 
-  tasks.push(newTask);
-  saveToLocalStorage(tasks);
-}
-
-function updateTask(id, data) {
-  const tasks = getTasks();
-  const index = tasks.findIndex(t => t.id === id);
-
-  if (index !== -1) {
-    tasks[index] = { ...tasks[index], ...data };
-    saveToLocalStorage(tasks);
-  }
-}
-
-function deleteTask(id) {
-  let tasks = getTasks();
-  tasks = tasks.filter(t => t.id !== id);
-  saveToLocalStorage(tasks);
-}
-
-// -------------------------------
-// Rendering
-// -------------------------------
-
-function updateStats(tasks) {
-  totalCount.textContent = tasks.length;
-  completedCount.textContent = tasks.filter(t => t.completed).length;
-  pendingCount.textContent = tasks.filter(t => !t.completed).length;
-}
-
-function render(tasks) {
-  let filtered =
-    currentFilter === "pending"
-      ? tasks.filter(t => !t.completed)
-      : currentFilter === "completed"
-      ? tasks.filter(t => t.completed)
-      : tasks;
-
-  updateStats(tasks);
-
-  tableBody.innerHTML = "";
-
-  filtered.forEach((task, idx) => {
-    const tr = document.createElement("tr");
-
-    tr.innerHTML = `
-      <td>${task.title}</td>
-      <td>${task.subject || "-"}</td>
-      <td>${task.dueDate || "-"}</td>
-      <td>${task.priority}</td>
-      <td><input type="checkbox" ${task.completed ? "checked" : ""}/></td>
-      <td><button class="delete-btn">Delete</button></td>
-    `;
-
-    const checkbox = tr.querySelector("input");
-    checkbox.addEventListener("change", () => {
-      updateTask(task.id, { completed: checkbox.checked });
-      load();
-    });
-
-    tr.querySelector(".delete-btn").addEventListener("click", () => {
-      deleteTask(task.id);
-      load();
-    });
-
-    tableBody.appendChild(tr);
-  });
-}
-
-// -------------------------------
-// Load & Initialize
-// -------------------------------
-
-function load() {
-  const tasks = getTasks();
-  render(tasks);
-}
-
-// Add Task
-addBtn.addEventListener("click", () => {
-  if (!titleInput.value.trim()) {
-    alert("Enter a task title");
-    return;
-  }
-
-  createTask({
-    title: titleInput.value,
-    subject: subjectInput.value,
-    dueDate: dueDateInput.value,
-    priority: prioritySelect.value
-  });
-
-  titleInput.value = "";
-  subjectInput.value = "";
-  dueDateInput.value = "";
-  prioritySelect.value = "Medium";
-
-  load();
+authToggleBtn.addEventListener("click", () => {
+    isRegisterMode = !isRegisterMode;
+    authTitle.textContent = isRegisterMode ? "Create Account" : "Welcome Back";
+    authSubtitle.textContent = isRegisterMode ? "Join the community today." : "Please login to manage your student life.";
+    authPrimaryBtn.textContent = isRegisterMode ? "Sign Up" : "Login";
+    authToggleText.textContent = isRegisterMode ? "Already have an account?" : "Don't have an account?";
+    authToggleBtn.textContent = isRegisterMode ? "Login" : "Sign Up";
 });
 
-// Filters
-filterBtns.forEach(btn => {
-  btn.addEventListener("click", () => {
-    filterBtns.forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-    currentFilter = btn.dataset.filter;
-    load();
-  });
+authPrimaryBtn.addEventListener("click", async () => {
+    const username = authUsernameInput.value.trim();
+    const password = authPasswordInput.value.trim();
+    if (!username || !password) return showToast("Please fill all fields", "warning");
+
+    const endpoint = isRegisterMode ? "/api/auth/register" : "/api/auth/login";
+    try {
+        const data = await apiRequest(endpoint, "POST", { username, password });
+        if (data.userId) {
+            currentUser = { userId: data.userId, username: data.username || username };
+            localStorage.setItem("taskProUser", JSON.stringify(currentUser));
+            showToast(isRegisterMode ? "Account created!" : "Welcome back!", "success");
+            initApp();
+        }
+    } catch (err) { /* Toast handled in apiRequest */ }
 });
 
-load();
+logoutBtn.addEventListener("click", () => {
+    currentUser = null;
+    localStorage.removeItem("taskProUser");
+    location.reload();
+});
+
+// --- Dashboard Logic ---
+
+async function fetchTasks() {
+    try {
+        allTasks = await apiRequest("/api/tasks");
+        render();
+    } catch (err) {}
+}
+
+async function handleAddTask() {
+    const title = taskTitleInput.value.trim();
+    if (!title) return showToast("Task title is required", "warning");
+
+    const tags = taskTagsInput.value.split(",").map(t => t.trim()).filter(t => t !== "");
+
+    await apiRequest("/api/tasks", "POST", {
+        title,
+        subject: taskSubjectInput.value.trim(),
+        dueDate: taskDueDateInput.value,
+        priority: taskPrioritySelect.value,
+        tags
+    });
+
+    taskTitleInput.value = "";
+    taskSubjectInput.value = "";
+    taskDueDateInput.value = "";
+    taskTagsInput.value = "";
+    showToast("Task added successfully", "success");
+    fetchTasks();
+}
+
+async function toggleTaskStatus(id, completed) {
+    await apiRequest(`/api/tasks/${id}`, "PATCH", { completed });
+    fetchTasks();
+}
+
+async function deleteTask(id) {
+    if (confirm("Permanently delete this task?")) {
+        await apiRequest(`/api/tasks/${id}`, "DELETE");
+        showToast("Task deleted", "info");
+        fetchTasks();
+    }
+}
+
+// --- Utilities ---
+
+function showToast(message, type = "success") {
+    const toast = document.createElement("div");
+    toast.className = `toast toast-${type}`;
+    toast.textContent = message;
+    toastContainer.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+}
+
+function exportToCSV() {
+    if (allTasks.length === 0) return showToast("No tasks to export", "warning");
+
+    const headers = ["Title", "Subject", "Due Date", "Priority", "Status", "Tags"];
+    const rows = allTasks.map(t => [
+        t.title,
+        t.subject,
+        t.dueDate,
+        t.priority,
+        t.completed ? "Done" : "Pending",
+        t.tags ? t.tags.join("; ") : ""
+    ]);
+
+    const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `tasks_export_${Date.now()}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast("Exporting CSV...", "info");
+}
+
+// --- Init & UI ---
+
+function initApp() {
+    if (!currentUser) {
+        authOverlay.classList.remove("hidden");
+        appMain.classList.add("hidden");
+    } else {
+        authOverlay.classList.add("hidden");
+        appMain.classList.remove("hidden");
+        userNameDisplay.textContent = currentUser.username;
+        fetchTasks();
+    }
+}
+
+function render() {
+    // KPI Updates
+    document.getElementById("totalCount").textContent = allTasks.length;
+    document.getElementById("pendingCount").textContent = allTasks.filter(t => !t.completed).length;
+    document.getElementById("completedCount").textContent = allTasks.filter(t => t.completed).length;
+    
+    const now = new Date();
+    const nextWeek = new Date(); nextWeek.setDate(now.getDate() + 7);
+    document.getElementById("weekCount").textContent = allTasks.filter(t => {
+        if (!t.dueDate || t.completed) return false;
+        const d = new Date(t.dueDate);
+        return d >= now && d <= nextWeek;
+    }).length;
+
+    let filtered = allTasks;
+    if (currentFilter === "pending") filtered = filtered.filter(t => !t.completed);
+    if (currentFilter === "completed") filtered = filtered.filter(t => t.completed);
+
+    const query = searchInput.value.toLowerCase();
+    if (query) {
+        filtered = filtered.filter(t => t.title.toLowerCase().includes(query) || t.subject.toLowerCase().includes(query));
+    }
+
+    const sortBy = sortSelect.value;
+    filtered.sort((a, b) => {
+        if (sortBy === "newest") return new Date(b.createdAt) - new Date(a.createdAt);
+        if (sortBy === "dueSoon") return (!a.dueDate ? 1 : !b.dueDate ? -1 : new Date(a.dueDate) - new Date(b.dueDate));
+        if (sortBy === "priority") {
+            const levels = { High: 3, Medium: 2, Low: 1 };
+            return (levels[b.priority] || 0) - (levels[a.priority] || 0);
+        }
+    });
+
+    const tbody = document.getElementById("taskTableBody");
+    tbody.innerHTML = "";
+    
+    if (filtered.length === 0) {
+        document.getElementById("emptyState").classList.remove("hidden");
+    } else {
+        document.getElementById("emptyState").classList.add("hidden");
+        filtered.forEach(task => {
+            const tr = document.createElement("tr");
+            const tagsHtml = (task.tags || []).map(tag => `<span class="badge tag-badge">${tag}</span>`).join("");
+            
+            tr.innerHTML = `
+                <td>${task.title}</td>
+                <td>
+                    <div style="font-size:0.85rem; color:#94a3b8">${task.subject || "-"}</div>
+                    <div style="margin-top:4px">${tagsHtml}</div>
+                </td>
+                <td>${task.dueDate || "-"}</td>
+                <td><span class="badge priority-${task.priority.toLowerCase()}">${task.priority}</span></td>
+                <td><input type="checkbox" class="task-checkbox" ${task.completed ? "checked" : ""}></td>
+                <td class="actions-col">
+                    <button class="action-btn delete-btn" title="Delete">🗑</button>
+                </td>
+            `;
+
+            tr.querySelector(".task-checkbox").addEventListener("change", (e) => toggleTaskStatus(task.id, e.target.checked));
+            tr.querySelector(".delete-btn").addEventListener("click", () => deleteTask(task.id));
+            tbody.appendChild(tr);
+        });
+    }
+}
+
+// --- Listeners ---
+addTaskBtn.addEventListener("click", handleAddTask);
+searchInput.addEventListener("input", render);
+sortSelect.addEventListener("change", render);
+exportCsvBtn.addEventListener("click", exportToCSV);
+
+document.querySelectorAll(".filter-button").forEach(btn => {
+    btn.addEventListener("click", () => {
+        document.querySelectorAll(".filter-button").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        currentFilter = btn.dataset.filter;
+        render();
+    });
+});
+
+document.getElementById("clearCompletedBtn").addEventListener("click", async () => {
+    if (confirm("Clear all completed tasks?")) {
+        await apiRequest("/api/tasks/completed", "DELETE");
+        showToast("Completed tasks cleared", "info");
+        fetchTasks();
+    }
+});
+
+initApp();

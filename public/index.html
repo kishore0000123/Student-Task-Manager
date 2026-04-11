@@ -1,78 +1,128 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Student Task Manager</title>
-    <link rel="stylesheet" href="style.css" />
-  </head>
-  <body>
-    <div class="container">
-      <h1>📚 Student Task Manager</h1>
-
-      <!-- Stats -->
-      <div class="stats">
-        <div class="stat-card">
-          <span>Total</span>
-          <strong id="totalCount">0</strong>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Task Pro | Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Auth Overlay -->
+    <div id="authOverlay" class="auth-overlay">
+        <div class="auth-card">
+            <h2 id="authTitle">Welcome to Task Pro</h2>
+            <p id="authSubtitle">Please login to manage your student life.</p>
+            <div class="auth-inputs">
+                <input type="text" id="authUsername" placeholder="Username">
+                <input type="password" id="authPassword" placeholder="Password">
+                <button id="authPrimaryBtn" class="btn-primary">Login</button>
+            </div>
+            <div class="auth-toggle">
+                <span id="authToggleText">Don't have an account?</span>
+                <button id="authToggleBtn">Sign Up</button>
+            </div>
         </div>
-        <div class="stat-card">
-          <span>Pending</span>
-          <strong id="pendingCount">0</strong>
-        </div>
-        <div class="stat-card">
-          <span>Completed</span>
-          <strong id="completedCount">0</strong>
-        </div>
-      </div>
+    </div>
 
-      <!-- Form -->
-      <div class="task-input">
-        <input
-          type="text"
-          id="taskTitle"
-          placeholder="Task title (e.g., DBMS record, ADS assignment)"
-        />
-        <input
-          type="text"
-          id="taskSubject"
-          placeholder="Subject (e.g., DBMS, Java)"
-        />
-        <input type="date" id="taskDueDate" />
-        <select id="taskPriority">
-          <option value="Low">Low</option>
-          <option value="Medium" selected>Medium</option>
-          <option value="High">High</option>
-        </select>
-        <button id="addTaskButton">Add Task</button>
-      </div>
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
 
-      <!-- Filters -->
-      <div class="filters">
-        <button data-filter="all" class="filter-button active">All</button>
-        <button data-filter="pending" class="filter-button">Pending</button>
-        <button data-filter="completed" class="filter-button">
-          Completed
-        </button>
-      </div>
+    <div class="app-wrapper hidden" id="appMain">
+        <!-- Hero Section -->
+        <header class="hero">
+            <div class="hero-header">
+                <div class="hero-content">
+                    <h1>Student Task <span class="accent-text">Pro</span></h1>
+                    <p>Welcome back, <span id="userNameDisplay" class="accent-text">Student</span>!</p>
+                </div>
+                <button id="logoutBtn" class="btn-outline">Logout</button>
+            </div>
+            <div class="kpi-grid">
+                <div class="kpi-card" id="kpi-total">
+                    <span class="kpi-label">Total Tasks</span>
+                    <strong class="kpi-value" id="totalCount">0</strong>
+                </div>
+                <div class="kpi-card" id="kpi-pending">
+                    <span class="kpi-label">Pending</span>
+                    <strong class="kpi-value" id="pendingCount">0</strong>
+                </div>
+                <div class="kpi-card" id="kpi-completed">
+                    <span class="kpi-label">Completed</span>
+                    <strong class="kpi-value" id="completedCount">0</strong>
+                </div>
+                <div class="kpi-card" id="kpi-week">
+                    <span class="kpi-label">Due This Week</span>
+                    <strong class="kpi-value" id="weekCount">0</strong>
+                </div>
+            </div>
+        </header>
 
-      <!-- Table -->
-      <div class="table-wrapper">
-        <table>
-          <thead>
-            <tr>
-              <th>Title</th>
-              <th>Subject</th>
-              <th>Due Date</th>
-              <th>Priority</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="taskTableBody"></tbody>
-        </table>
-      </div>
+        <main class="container">
+            <!-- Control Panel -->
+            <section class="control-panel">
+                <div class="input-grid">
+                    <input type="text" id="taskTitle" placeholder="Task Title (e.g., DBMS Assignment)">
+                    <input type="text" id="taskSubject" placeholder="Subject">
+                    <input type="date" id="taskDueDate">
+                    <select id="taskPriority">
+                        <option value="Low">Low Priority</option>
+                        <option value="Medium" selected>Medium Priority</option>
+                        <option value="High">High Priority</option>
+                    </select>
+                    <input type="text" id="taskTags" placeholder="Tags (comma separated)">
+                    <button id="addTaskButton" class="btn-primary">Add Task</button>
+                </div>
+
+                <div class="action-bar">
+                    <div class="search-sort">
+                        <input type="text" id="searchInput" placeholder="Search tasks...">
+                        <select id="sortSelect">
+                            <option value="newest">Newest First</option>
+                            <option value="dueSoon">Due Soonest</option>
+                            <option value="priority">High Priority First</option>
+                        </select>
+                    </div>
+                    <div class="filters">
+                        <button data-filter="all" class="filter-button active">All</button>
+                        <button data-filter="pending" class="filter-button">Pending</button>
+                        <button data-filter="completed" class="filter-button">Completed</button>
+                        <button id="exportCsvBtn" class="btn-outline" title="Export to CSV">📥 Export</button>
+                        <button id="clearCompletedBtn" class="btn-outline-danger">Clear Completed</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Table Section -->
+            <section class="table-section">
+                <div class="table-wrapper">
+                    <table id="taskTable">
+                        <thead>
+                            <tr>
+                                <th>Task Title</th>
+                                <th>Subject/Tags</th>
+                                <th>Due Date</th>
+                                <th>Priority</th>
+                                <th>Status</th>
+                                <th class="actions-col">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="taskTableBody">
+                            <!-- Tasks injected here -->
+                        </tbody>
+                    </table>
+                    <div id="emptyState" class="empty-state hidden">
+                        <div class="empty-icon"></div>
+                        <h3>No tasks found</h3>
+                        <p>Your dashboard is clean! Add a task to get started.</p>
+                    </div>
+                </div>
+            </section>
+        </main>
     </div>
 
     <script src="app.js" defer></script>
-  </body>
+</body>
 </html>
