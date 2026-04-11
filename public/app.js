@@ -62,6 +62,10 @@ authToggleBtn.addEventListener("click", () => {
     authPrimaryBtn.textContent = isRegisterMode ? "Sign Up" : "Login";
     authToggleText.textContent = isRegisterMode ? "Already have an account?" : "Don't have an account?";
     authToggleBtn.textContent = isRegisterMode ? "Login" : "Sign Up";
+    
+    // Clear inputs when toggling
+    authUsernameInput.value = "";
+    authPasswordInput.value = "";
 });
 
 authPrimaryBtn.addEventListener("click", async () => {
